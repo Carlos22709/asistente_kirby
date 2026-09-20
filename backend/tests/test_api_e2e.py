@@ -67,9 +67,17 @@ class ApiEndToEndTest(unittest.TestCase):
 
             task = client.post(
                 "/tasks",
-                json={"title": "Entregar proyecto", "priority": "Alta", "due_date": future},
+                json={
+                    "title": "Entregar proyecto",
+                    "priority": "Alta",
+                    "due_date": future,
+                    "source_gmail_thread_id": "thread-project-1",
+                },
             )
             self.assertEqual(task.status_code, 201)
+            self.assertEqual(
+                task.json()["source_gmail_thread_id"], "thread-project-1"
+            )
             task_id = task.json()["id"]
             self.assertEqual(len(client.get("/tasks").json()), 1)
             updated_task = client.put(
@@ -77,6 +85,9 @@ class ApiEndToEndTest(unittest.TestCase):
                 json={"title": "Entregar proyecto final", "priority": "Alta"},
             )
             self.assertEqual(updated_task.status_code, 200)
+            self.assertEqual(
+                updated_task.json()["source_gmail_thread_id"], "thread-project-1"
+            )
             in_progress = client.patch(
                 f"/tasks/{task_id}/status", json={"status": "En progreso"}
             )
@@ -364,6 +375,7 @@ class ApiEndToEndTest(unittest.TestCase):
 
             backup = client.get("/system/backup")
             self.assertEqual(backup.status_code, 200)
+            self.assertIn("gmail_thread_references", backup.json()["tables"])
             self.assertIn("recurring_transactions", backup.json()["tables"])
             self.assertEqual(
                 client.delete(f"/finances/recurring/{recurring_id}").status_code,
@@ -380,7 +392,11 @@ class ApiEndToEndTest(unittest.TestCase):
 
         # Una segunda vida útil de FastAPI reutiliza el mismo archivo y confirma persistencia.
         with TestClient(app) as restarted_client:
-            self.assertEqual(restarted_client.get(f"/tasks/{task_id}").status_code, 200)
+            persisted_task = restarted_client.get(f"/tasks/{task_id}")
+            self.assertEqual(persisted_task.status_code, 200)
+            self.assertEqual(
+                persisted_task.json()["source_gmail_thread_id"], "thread-project-1"
+            )
             self.assertEqual(restarted_client.get(f"/expenses/{expense_id}").status_code, 200)
             self.assertEqual(restarted_client.get(f"/incomes/{income_id}").status_code, 200)
             self.assertEqual(

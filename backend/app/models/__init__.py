@@ -5,6 +5,7 @@ from .bank_notification import BankNotification
 from .event import Event
 from .expense import Expense
 from .financial_account import FinancialAccount
+from .gmail_thread_reference import GmailThreadReference
 from .income import Income
 from .recurring_transaction import RecurringTransaction
 from .savings_goal import SavingsGoal
@@ -16,6 +17,7 @@ __all__ = [
     "Event",
     "Expense",
     "FinancialAccount",
+    "GmailThreadReference",
     "Income",
     "RecurringTransaction",
     "SavingsGoal",

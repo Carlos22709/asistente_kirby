@@ -16,6 +16,7 @@ from ..schemas.task import (
     TaskStatusUpdate,
     TaskUpdate,
 )
+from ..services.gmail_references import set_task_gmail_thread_reference
 
 router = APIRouter(prefix="/tasks", tags=["Tareas"])
 
@@ -66,11 +67,13 @@ def list_tasks(
 
 @router.post("", response_model=TaskRead, status_code=status.HTTP_201_CREATED)
 def create_task(payload: TaskCreate, db: Session = Depends(get_db)) -> Task:
+    values = payload.model_dump(exclude={"source_gmail_thread_id"})
     task = Task(
-        **payload.model_dump(),
+        **values,
         completed=payload.status == TaskStatus.completed,
     )
     db.add(task)
+    set_task_gmail_thread_reference(db, task, payload.source_gmail_thread_id)
     db.commit()
     db.refresh(task)
     return task
@@ -85,8 +88,11 @@ def get_task(task_id: int, db: Session = Depends(get_db)) -> Task:
 def update_task(task_id: int, payload: TaskUpdate, db: Session = Depends(get_db)) -> Task:
     task = get_or_404(db, task_id)
     changes = payload.model_dump(exclude_unset=True)
+    gmail_thread_id = changes.pop("source_gmail_thread_id", ...)
     for key, value in changes.items():
         setattr(task, key, value)
+    if gmail_thread_id is not ...:
+        set_task_gmail_thread_reference(db, task, gmail_thread_id)
     if "status" in changes:
         task.completed = task.status == TaskStatus.completed
     elif "completed" in changes:

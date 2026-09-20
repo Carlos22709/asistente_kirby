@@ -1,12 +1,16 @@
 """Modelo persistente de una tarea administrada por el agente secretario."""
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Enum, String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, Text, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
 from .enums import TaskPriority, TaskStatus
+
+if TYPE_CHECKING:
+    from .gmail_thread_reference import GmailThreadReference
 
 
 class Task(Base):
@@ -27,6 +31,27 @@ class Task(Base):
         index=True,
         nullable=False,
     )
+    source_gmail_thread_ref_id: Mapped[int | None] = mapped_column(
+        ForeignKey(
+            "gmail_thread_references.id",
+            name="fk_tasks_source_gmail_thread_ref",
+            ondelete="SET NULL",
+        ),
+        index=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+    source_gmail_thread_ref: Mapped["GmailThreadReference | None"] = relationship(
+        back_populates="tasks",
+        lazy="joined",
+    )
+
+    @property
+    def source_gmail_thread_id(self) -> str | None:
+        """Expone el identificador externo sin convertir Gmail en fuente local."""
+
+        if self.source_gmail_thread_ref is None:
+            return None
+        return self.source_gmail_thread_ref.gmail_thread_id

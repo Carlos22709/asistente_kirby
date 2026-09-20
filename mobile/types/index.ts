@@ -27,6 +27,7 @@ export interface Task {
   priority: TaskPriority;
   status: TaskStatus;
   completed: boolean;
+  source_gmail_thread_id: string | null;
   created_at: string;
 }
 
@@ -37,6 +38,7 @@ export interface TaskInput {
   priority: TaskPriority;
   status?: TaskStatus;
   completed?: boolean;
+  source_gmail_thread_id?: string | null;
 }
 
 export interface Expense {

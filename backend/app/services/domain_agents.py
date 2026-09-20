@@ -55,6 +55,7 @@ from .finances import (
     build_cash_flow_summary,
     build_finance_summary,
 )
+from .gmail_references import set_task_gmail_thread_reference
 from .llm import InvalidLLMResponseError, ToolCallingClient
 from .savings import build_savings_summary, goal_to_read
 
@@ -107,6 +108,13 @@ SECRETARY_TOOLS = [
                 "type": "string",
                 "enum": [priority.value for priority in TaskPriority],
                 "description": "Prioridad; usa Media si no se especifica.",
+            },
+            "source_gmail_thread_id": {
+                "type": "string",
+                "description": (
+                    "Hilo de Gmail solo si la tarea proviene de un correo "
+                    "mostrado en esta conversación."
+                ),
             },
         },
         ["title"],
@@ -573,6 +581,14 @@ def _draft_is_in_conversation(
     )
 
 
+def _gmail_thread_is_in_conversation(
+    request: AssistantChatRequest, gmail_thread_id: str
+) -> bool:
+    if gmail_thread_id in request.message:
+        return True
+    return any(gmail_thread_id in message.content for message in request.history)
+
+
 def _secretary_overview(db: Session) -> str:
     now = bogota_now()
     tasks = list(
@@ -731,12 +747,33 @@ class SecretaryAgent:
             return _secretary_overview(db)
         if tool_call.name == "create_task":
             payload = _validate(TaskCreate, tool_call.arguments)
-            task = Task(**payload.model_dump())
+            if (
+                payload.source_gmail_thread_id
+                and not _gmail_thread_is_in_conversation(
+                    request, payload.source_gmail_thread_id
+                )
+            ):
+                raise InvalidLLMResponseError(
+                    "El hilo de Gmail asociado no aparece en la conversación"
+                )
+            values = payload.model_dump(exclude={"source_gmail_thread_id"})
+            task = Task(**values)
             db.add(task)
+            set_task_gmail_thread_reference(
+                db, task, payload.source_gmail_thread_id
+            )
             db.commit()
             db.refresh(task)
             due = _format_datetime(task.due_date) if task.due_date else "sin fecha límite"
-            return f"Secretaría creó la tarea «{task.title}», prioridad {task.priority.value}, {due}."
+            source = (
+                f", vinculada al hilo de Gmail {payload.source_gmail_thread_id}"
+                if payload.source_gmail_thread_id
+                else ""
+            )
+            return (
+                f"Secretaría creó la tarea «{task.title}», prioridad "
+                f"{task.priority.value}, {due}{source}."
+            )
         if tool_call.name == "update_task_status":
             title = tool_call.arguments.get("title")
             raw_status = tool_call.arguments.get("status")

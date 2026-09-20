@@ -19,6 +19,7 @@ from app.models.enums import (
 from app.models.event import Event
 from app.models.expense import Expense
 from app.models.financial_account import FinancialAccount
+from app.models.gmail_thread_reference import GmailThreadReference
 from app.models.income import Income
 from app.models.recurring_transaction import RecurringTransaction
 from app.models.savings_goal import SavingsGoal
@@ -163,6 +164,41 @@ class DomainAgentsTest(unittest.IsolatedAsyncioTestCase):
         self.assertIsNotNone(task)
         self.assertEqual(task.priority, TaskPriority.high)
         self.assertIn("creó la tarea", response)
+
+    async def test_secretary_links_a_task_to_a_gmail_thread(self) -> None:
+        agent = SecretaryAgent(
+            StaticToolClient(
+                ToolCall(
+                    "create_task",
+                    {
+                        "title": "Responder informe",
+                        "priority": "Alta",
+                        "source_gmail_thread_id": "thread-1",
+                    },
+                )
+            )
+        )
+
+        response = await agent.respond(
+            self.db,
+            AssistantChatRequest(
+                message="Crea una tarea para responder ese correo",
+                history=[
+                    {
+                        "role": "assistant",
+                        "content": "Estado del proyecto [hilo: thread-1]",
+                    }
+                ],
+            ),
+        )
+
+        task = self.db.scalar(select(Task).where(Task.title == "Responder informe"))
+        reference = self.db.scalar(select(GmailThreadReference))
+        self.assertIsNotNone(task)
+        self.assertIsNotNone(reference)
+        self.assertEqual(task.source_gmail_thread_id, "thread-1")
+        self.assertEqual(reference.gmail_thread_id, "thread-1")
+        self.assertIn("vinculada al hilo de Gmail thread-1", response)
 
     async def test_secretary_creates_an_event(self) -> None:
         start = bogota_now() + timedelta(days=2)

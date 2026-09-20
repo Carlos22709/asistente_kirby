@@ -18,6 +18,7 @@ from ..models.budget import Budget
 from ..models.event import Event
 from ..models.expense import Expense
 from ..models.financial_account import FinancialAccount
+from ..models.gmail_thread_reference import GmailThreadReference
 from ..models.income import Income
 from ..models.recurring_transaction import RecurringTransaction
 from ..models.savings_goal import SavingsGoal
@@ -33,6 +34,7 @@ from ..schemas.system import (
 router = APIRouter(prefix="/system", tags=["Sistema"])
 
 BACKUP_MODELS = {
+    "gmail_thread_references": GmailThreadReference,
     "tasks": Task,
     "expenses": Expense,
     "incomes": Income,

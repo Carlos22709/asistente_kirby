@@ -14,6 +14,9 @@ class TaskBase(BaseModel):
     due_date: datetime | None = None
     priority: TaskPriority = TaskPriority.medium
     status: TaskStatus = TaskStatus.pending
+    source_gmail_thread_id: str | None = Field(
+        default=None, min_length=1, max_length=200
+    )
 
     @field_validator("title")
     @classmethod
@@ -27,6 +30,13 @@ class TaskBase(BaseModel):
     def normalize_due_date(cls, value: datetime | None) -> datetime | None:
         return value.replace(tzinfo=BOGOTA) if value is not None and value.tzinfo is None else value
 
+    @field_validator("source_gmail_thread_id")
+    @classmethod
+    def strip_gmail_thread_id(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            raise ValueError("El identificador del hilo de Gmail no puede estar vacío")
+        return value.strip() if value is not None else None
+
 
 class TaskCreate(TaskBase):
     pass
@@ -39,6 +49,9 @@ class TaskUpdate(BaseModel):
     priority: TaskPriority | None = None
     completed: bool | None = None
     status: TaskStatus | None = None
+    source_gmail_thread_id: str | None = Field(
+        default=None, min_length=1, max_length=200
+    )
 
     @field_validator("title")
     @classmethod
@@ -51,6 +64,13 @@ class TaskUpdate(BaseModel):
     @classmethod
     def normalize_due_date(cls, value: datetime | None) -> datetime | None:
         return value.replace(tzinfo=BOGOTA) if value is not None and value.tzinfo is None else value
+
+    @field_validator("source_gmail_thread_id")
+    @classmethod
+    def strip_gmail_thread_id(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            raise ValueError("El identificador del hilo de Gmail no puede estar vacío")
+        return value.strip() if value is not None else None
 
 
 class TaskRead(TaskBase):
