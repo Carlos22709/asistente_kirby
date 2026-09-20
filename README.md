@@ -33,9 +33,17 @@ En el flujo de voz, el cliente graba el audio, el backend lo transcribe con
 Whisper y el orquestador selecciona Secretaría, Finanzas o ambos. La respuesta
 regresa al móvil y puede reproducirse mediante síntesis de voz.
 
-Las tablas se crean automáticamente al arrancar el backend. Esta decisión simplifica la primera versión; si el esquema evoluciona, el paso natural será incorporar migraciones más adelante.
+Las tablas faltantes se crean automáticamente al arrancar el backend. Los
+cambios de esquema para bases existentes se versionan en `backend/migrations/`.
+La migración `001_add_gmail_task_reference.sql` incorpora la tabla
+`gmail_thread_references` y la relación opcional
+`tasks.source_gmail_thread_ref_id -> gmail_thread_references.id`.
 
-El agente de Secretaría también puede trabajar con Gmail: lista, busca y prioriza mensajes, resume hilos con Ollama, crea borradores y los envía únicamente después de una confirmación explícita.
+El agente de Secretaría también puede trabajar con Gmail: lista, busca y
+prioriza mensajes, resume hilos con Ollama, crea borradores y los envía
+únicamente después de una confirmación explícita. Gmail continúa siendo la
+fuente principal de los correos; la base de datos conserva solamente el
+identificador mínimo de un hilo cuando se vincula con una tarea.
 
 ## Requisitos
 
@@ -211,9 +219,10 @@ Si la instalación utiliza `5432` u otro puerto, se debe ajustar
 `DATABASE_URL`. Supabase utiliza la URI completa entregada por su panel.
 
 Swagger queda disponible en `http://127.0.0.1:3000/docs` y el estado básico
-en `http://127.0.0.1:3000/health`. Al iniciar se crean `tasks`, `incomes`,
-`expenses`, `budgets`, `financial_accounts`, `savings_goals`, `events`
-y `bank_notifications` sin borrar datos existentes.
+en `http://127.0.0.1:3000/health`. Al iniciar se crean, si aún no existen,
+`tasks`, `incomes`, `expenses`, `budgets`, `financial_accounts`,
+`savings_goals`, `events`, `recurring_transactions`, `bank_notifications` y
+`gmail_thread_references`, sin borrar datos existentes.
 
 ### CORS
 
