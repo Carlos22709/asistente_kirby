@@ -217,7 +217,7 @@ y `bank_notifications` sin borrar datos existentes.
 
 ### CORS
 
-`CORS_ORIGINS=*` es práctico en desarrollo local. Para restringirlo, indica una lista separada por comas, por ejemplo:
+`CORS_ORIGINS=*` es práctico en desarrollo local. Para restringirlo, se debe indicar una lista separada por comas, por ejemplo:
 
 ```dotenv
 CORS_ORIGINS=http://localhost:8081,http://192.168.1.10:8081
@@ -335,9 +335,9 @@ npx expo start --clear
 ## Uso
 
 - **Inicio:** muestra tareas pendientes y próximas, gasto diario/semanal, siguiente evento y presupuesto del mes.
-- **Tareas:** crea, edita, inicia, pausa, completa, reabre, filtra y elimina tareas con estados Pendiente, En progreso y Completada. Las vencidas tienen tratamiento visual distinto.
-- **Finanzas:** registra ingresos y gastos, calcula el flujo neto mensual, administra el presupuesto, controla tarjetas o préstamos y sigue metas de ahorro con aportes y porcentaje de avance.
-- **Agenda:** crea, edita, agrupa por fecha, filtra y elimina eventos próximos.
+- **Tareas:** permite crear, editar, iniciar, pausar, completar, reabrir, filtrar y eliminar tareas con estados Pendiente, En progreso y Completada. Las vencidas tienen tratamiento visual distinto.
+- **Finanzas:** permite registrar ingresos y gastos, calcular el flujo neto mensual, administrar el presupuesto, controlar tarjetas o préstamos y seguir metas de ahorro con aportes y porcentaje de avance.
+- **Agenda:** permite crear, editar, agrupar por fecha, filtrar y eliminar eventos próximos.
 - **Recordatorios:** una tarea o evento futuro puede programar un recordatorio local. La app conserva su identificador en el dispositivo, lo reemplaza al editar, lo cancela al desactivarlo, eliminar el elemento o completar una tarea, y evita duplicados. Si el permiso se deniega, el resto de la app sigue funcionando. No se usan notificaciones push.
 - **Asistente:** la pestaña móvil acepta texto o dictado en español, conserva hasta 20 mensajes de contexto y puede leer la respuesta en voz alta. `POST /assistant/chat` usa un primer function calling para elegir Secretaría, Finanzas o ambos, y un segundo para seleccionar la acción de dominio. Secretaría consulta o crea tareas y eventos; también lista, busca, prioriza y resume Gmail, crea borradores y solo los envía con confirmación explícita. Finanzas consulta el estado financiero o registra gastos. Las acciones locales se guardan inmediatamente en PostgreSQL.
 - **Registro bancario automático:** `POST /webhooks/bank-transactions` recibe el texto de una notificación bancaria, Ollama extrae la transacción y la registra como gasto. El texto se trata como contenido no confiable, se ignoran códigos, promociones, saldos y operaciones rechazadas, y una huella evita registrar dos veces la misma notificación. Por seguridad, solo COP se registra automáticamente; otras monedas quedan para revisión manual.
@@ -377,7 +377,7 @@ Invoke-RestMethod `
   -Body $body
 ```
 
-La respuesta usa `created` si creó el gasto, `duplicate` si ya había procesado ese mismo texto, o `ignored` si no detectó una transacción válida. En un teléfono, Tasker/MacroDroid (Android) o una automatización de Atajos (iOS) deben enviar el texto recibido con ese mismo encabezado. No publiques `BANK_WEBHOOK_TOKEN` ni lo incluyas en el código de la app.
+La respuesta usa `created` si creó el gasto, `duplicate` si ya había procesado ese mismo texto, o `ignored` si no detectó una transacción válida. En un teléfono, Tasker/MacroDroid (Android) o una automatización de Atajos (iOS) deben enviar el texto recibido con ese mismo encabezado. `BANK_WEBHOOK_TOKEN` no debe publicarse ni incluirse en el código de la app.
 
 La configuración de un iPhone —y la alternativa equivalente en Android— se
 encuentra en [la guía de automatización del teléfono](docs/automatizacion-telefono.md).
@@ -422,7 +422,7 @@ Con PostgreSQL y FastAPI iniciados:
 9. Enviar montos negativos, títulos vacíos, mes `13` y una fecha final anterior
    para confirmar respuestas `422`.
 10. Reiniciar Uvicorn y volver a listar los recursos para comprobar persistencia.
-11. En `mobile`, ejecuta:
+11. En `mobile`, ejecutar:
 
    ```powershell
    npm run typecheck
